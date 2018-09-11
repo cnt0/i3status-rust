@@ -3,6 +3,7 @@ mod template;
 mod load;
 mod memory;
 mod cpu;
+mod iwd;
 mod music;
 pub mod battery;
 mod custom;
@@ -32,6 +33,7 @@ use self::memory::*;
 use self::battery::*;
 use self::custom::*;
 use self::disk_space::*;
+use self::iwd::*;
 use self::pacman::*;
 use self::sound::*;
 use self::speedtest::*;
@@ -100,6 +102,7 @@ pub fn create_block(name: &str, block_config: Value, config: Config, tx_update_r
             "uptime" => Uptime,
             "nvidia_gpu" => NvidiaGpu,
             "maildir" => Maildir,
-            "networkmanager" => NetworkManager
+            "networkmanager" => NetworkManager,
+            "iwd" => IWD
     )
 }

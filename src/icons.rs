@@ -129,7 +129,7 @@ lazy_static! {
         "uptime" => " \u{e192} ",
         "gpu" => " \u{e333} ",
         "mail" => " \u{e0be} ",
-        "wifi" => " WiFi "
+        "wifi" => " \u{e63e} "
     };
 }
 

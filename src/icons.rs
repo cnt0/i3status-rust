@@ -46,7 +46,8 @@ lazy_static! {
         "uptime" => " UP ",
         "gpu" => " GPU ",
         "mail" => " ",
-        "wifi" => " WiFi "
+        "wifi" => " WiFi ",
+        "power_off" => " OFF "
     };
 
     pub static ref AWESOME: Map<String, String> = map_to_owned! {
@@ -96,7 +97,8 @@ lazy_static! {
         "uptime" => " \u{f017} ",
         "gpu" => " \u{f26c} ",
         "mail" => " \u{f0e0} ",
-        "wifi" => " \u{f1eb} "
+        "wifi" => " \u{f1eb} ",
+        "power_off" => " \u{f011} "
     };
 
     pub static ref MATERIAL: Map<String, String> = map_to_owned! {
@@ -129,7 +131,8 @@ lazy_static! {
         "uptime" => " \u{e192} ",
         "gpu" => " \u{e333} ",
         "mail" => " \u{e0be} ",
-        "wifi" => " \u{e63e} "
+        "wifi" => " \u{e63e} ",
+        "power_off" => " \u{f901} "
     };
 }
 

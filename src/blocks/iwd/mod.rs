@@ -61,12 +61,25 @@ struct IWDPrivate {
 #[serde(deny_unknown_fields)]
 pub struct IWDConfig {
     /// Name of the wifi device to be monitored by this block.
+    #[serde(default = "IWDConfig::default_device_id")]
     pub device_id: String,
+    #[serde(default = "IWDConfig::default_show_disconnected_btn")]
     pub show_disconnect_btn: bool,
+    #[serde(default = "IWDConfig::default_disconnected_str")]
     pub disconnected_str: String,
 }
 
-impl IWDConfig {}
+impl IWDConfig {
+    fn default_device_id() -> String {
+        "/0/3".to_owned()
+    }
+    fn default_show_disconnected_btn() -> bool {
+        true
+    }
+    fn default_disconnected_str() -> String {
+        "".to_owned()
+    }
+}
 
 impl ConfigBlock for IWD {
     type Config = IWDConfig;
@@ -95,10 +108,7 @@ impl ConfigBlock for IWD {
                     state.network_obj = device.get_connected_network().unwrap().to_string();
                 }
             }
-            c.add_match(&PropsChanged::match_str(
-                Some(&IWD_IFACE.into()),
-                Some(&Path::from(block_config.device_id)),
-            )).unwrap();
+            c.add_match(&PropsChanged::match_str(Some(&IWD_IFACE.into()), Some(&Path::from(block_config.device_id)))).unwrap();
             loop {
                 for ci in c.iter(TIMEOUT) {
                     if let ConnectionItem::Signal(msg) = ci {
@@ -124,15 +134,11 @@ impl ConfigBlock for IWD {
             id: id_copy,
             device_id: device_id_copy,
             cur_state: cur_state_copy,
-            network: TextWidget::new(config.clone())
-                .with_icon("wifi")
-                .with_state(State::Critical)
-                .with_text(STATE_DISCONNECTED),
+            network: TextWidget::new(config.clone()).with_icon("wifi").with_state(State::Critical).with_text(STATE_DISCONNECTED),
             disconnect: btn,
             disconnected_str: disconnected_str,
             //disconnect: ButtonWidget::new(config.clone(), "disconnect").with_icon("toggle_off"),
-            dbus_conn: Connection::get_private(BusType::System)
-                .block_error("iwd", "failed to establish D-Bus connection")?,
+            dbus_conn: Connection::get_private(BusType::System).block_error("iwd", "failed to establish D-Bus connection")?,
         })
     }
 }
@@ -145,16 +151,11 @@ impl Block for IWD {
     fn update(&mut self) -> Result<Option<Duration>> {
         let disconnected_str = self.disconnected_str.clone();
         let cur_state = &mut *self.cur_state.lock().unwrap();
-        self.network
-            .set_state(get_widget_state(cur_state.state.as_str()));
+        self.network.set_state(get_widget_state(cur_state.state.as_str()));
         self.network.set_text(match cur_state.state.as_str() {
             STATE_DISCONNECTED => disconnected_str,
             STATE_DISCONNECTING => disconnected_str,
-            _ => NetConnmanIwdNetwork::get_name(&self.dbus_conn.with_path(
-                IWD_IFACE,
-                cur_state.network_obj.as_str(),
-                TIMEOUT,
-            )).unwrap(),
+            _ => NetConnmanIwdNetwork::get_name(&self.dbus_conn.with_path(IWD_IFACE, cur_state.network_obj.as_str(), TIMEOUT)).unwrap(),
         });
         Ok(None)
     }
@@ -162,9 +163,7 @@ impl Block for IWD {
     fn click(&mut self, event: &I3BarEvent) -> Result<()> {
         if let Some(ref name) = event.name {
             if name == "disconnect" {
-                let device = self
-                    .dbus_conn
-                    .with_path(IWD_IFACE, &self.device_id, TIMEOUT);
+                let device = self.dbus_conn.with_path(IWD_IFACE, &self.device_id, TIMEOUT);
                 device.disconnect().unwrap();
             }
         }

@@ -7,8 +7,10 @@ use std::time::{Duration, Instant};
 use block::{Block, ConfigBlock};
 use config::Config;
 use errors::*;
+use input::I3BarEvent;
 use scheduler::Task;
 use widget::{I3BarWidget, State};
+use widgets::button::ButtonWidget;
 use widgets::text::TextWidget;
 
 use self::stdintf::org_freedesktop_dbus::PropertiesPropertiesChanged as PropsChanged;
@@ -41,7 +43,9 @@ fn get_widget_state(state: &str) -> State {
 
 pub struct IWD {
     id: String,
+    device_id: String,
     network: TextWidget,
+    disconnect: Option<ButtonWidget>,
     cur_state: Arc<Mutex<IWDPrivate>>,
     dbus_conn: Connection,
 }
@@ -57,6 +61,7 @@ struct IWDPrivate {
 pub struct IWDConfig {
     /// Name of the wifi device to be monitored by this block.
     pub device_id: String,
+    pub show_disconnect_btn: bool,
 }
 
 impl IWDConfig {}
@@ -69,6 +74,12 @@ impl ConfigBlock for IWD {
         let id_copy = id.clone();
         let cur_state: Arc<Mutex<IWDPrivate>> = Arc::new(Mutex::new(Default::default()));
         let cur_state_copy = cur_state.clone();
+        let device_id_copy = block_config.device_id.clone();
+        let btn = if block_config.show_disconnect_btn {
+            Some(ButtonWidget::new(config.clone(), "disconnect").with_icon("power_off"))
+        } else {
+            None
+        };
 
         thread::spawn(move || {
             let c = Connection::get_private(BusType::System).unwrap();
@@ -108,11 +119,14 @@ impl ConfigBlock for IWD {
 
         Ok(IWD {
             id: id_copy,
+            device_id: device_id_copy,
             cur_state: cur_state_copy,
             network: TextWidget::new(config.clone())
                 .with_icon("wifi")
                 .with_state(State::Critical)
                 .with_text(STATE_DISCONNECTED),
+            disconnect: btn,
+            //disconnect: ButtonWidget::new(config.clone(), "disconnect").with_icon("toggle_off"),
             dbus_conn: Connection::get_private(BusType::System)
                 .block_error("iwd", "failed to establish D-Bus connection")?,
         })
@@ -140,7 +154,23 @@ impl Block for IWD {
         Ok(None)
     }
 
+    fn click(&mut self, event: &I3BarEvent) -> Result<()> {
+        if let Some(ref name) = event.name {
+            if name == "disconnect" {
+                let device = self
+                    .dbus_conn
+                    .with_path(IWD_IFACE, &self.device_id, TIMEOUT);
+                device.disconnect().unwrap();
+            }
+        }
+        Ok(())
+    }
+
     fn view(&self) -> Vec<&I3BarWidget> {
-        vec![&self.network]
+        if let Some(ref btn) = self.disconnect {
+            vec![&self.network, btn]
+        } else {
+            vec![&self.network]
+        }
     }
 }

@@ -46,6 +46,7 @@ pub struct IWD {
     device_id: String,
     network: TextWidget,
     disconnect: Option<ButtonWidget>,
+    disconnected_str: String,
     cur_state: Arc<Mutex<IWDPrivate>>,
     dbus_conn: Connection,
 }
@@ -62,6 +63,7 @@ pub struct IWDConfig {
     /// Name of the wifi device to be monitored by this block.
     pub device_id: String,
     pub show_disconnect_btn: bool,
+    pub disconnected_str: String,
 }
 
 impl IWDConfig {}
@@ -75,6 +77,7 @@ impl ConfigBlock for IWD {
         let cur_state: Arc<Mutex<IWDPrivate>> = Arc::new(Mutex::new(Default::default()));
         let cur_state_copy = cur_state.clone();
         let device_id_copy = block_config.device_id.clone();
+        let disconnected_str = block_config.disconnected_str.clone();
         let btn = if block_config.show_disconnect_btn {
             Some(ButtonWidget::new(config.clone(), "disconnect").with_icon("power_off"))
         } else {
@@ -126,6 +129,7 @@ impl ConfigBlock for IWD {
                 .with_state(State::Critical)
                 .with_text(STATE_DISCONNECTED),
             disconnect: btn,
+            disconnected_str: disconnected_str,
             //disconnect: ButtonWidget::new(config.clone(), "disconnect").with_icon("toggle_off"),
             dbus_conn: Connection::get_private(BusType::System)
                 .block_error("iwd", "failed to establish D-Bus connection")?,
@@ -139,12 +143,13 @@ impl Block for IWD {
     }
 
     fn update(&mut self) -> Result<Option<Duration>> {
+        let disconnected_str = self.disconnected_str.clone();
         let cur_state = &mut *self.cur_state.lock().unwrap();
         self.network
             .set_state(get_widget_state(cur_state.state.as_str()));
         self.network.set_text(match cur_state.state.as_str() {
-            STATE_DISCONNECTED => STATE_DISCONNECTED.to_owned(),
-            STATE_DISCONNECTING => STATE_DISCONNECTING.to_owned(),
+            STATE_DISCONNECTED => disconnected_str,
+            STATE_DISCONNECTING => disconnected_str,
             _ => NetConnmanIwdNetwork::get_name(&self.dbus_conn.with_path(
                 IWD_IFACE,
                 cur_state.network_obj.as_str(),

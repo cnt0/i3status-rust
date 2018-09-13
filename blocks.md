@@ -21,7 +21,7 @@
 - [Weather](#weather)
 - [Xrandr](#xrandr)
 - [Maildir](#maildir)
-- [IWD](#IWD)
+- [IWD](#iwd)
 
 ## Backlight
 
